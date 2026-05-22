@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Can I Retire? — Retirement Readiness Calculator</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  :root{--bg:#0b0d17;--surface:#1e293b;--border:#334155;--text:#e2e8f0;--muted:#64748b;--accent:#f59e0b;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding:1rem;}
+  .container{max-width:1100px;margin:0 auto;}
+  header{text-align:center;padding:2rem 0 1.5rem;}
+  header h1{font-size:2rem;font-weight:700;}
+  header p{color:var(--muted);margin-top:0.3rem;}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;}
+  .card:last-child{margin-bottom:0;}
+  .card h2{font-size:1rem;font-weight:600;margin-bottom:1rem;color:#f1f5f9;}
+  .card h3{font-size:0.9rem;color:var(--muted);font-weight:500;margin:1rem 0 0.5rem;}
+  .input-group{margin-bottom:1rem;}
+  .input-group label{display:block;font-size:0.8rem;color:var(--muted);margin-bottom:0.3rem;}
+  .input-group input,.input-group select{width:100%;padding:0.6rem 0.8rem;border-radius:8px;background:#0f172a;border:1px solid var(--border);color:var(--text);font-size:0.95rem;font-family:inherit;}
+  .input-group input:focus{outline:none;border-color:var(--accent);}
+  .input-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+  .btn{padding:0.75rem 1.5rem;border:none;border-radius:8px;font-weight:600;font-size:0.95rem;cursor:pointer;background:var(--accent);color:#0b0d17;}
+  .btn:hover{opacity:0.9;}
+  .btn.secondary{background:var(--border);color:var(--text);}
+  .btn-group{display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:1rem;}
+  .stat{margin-bottom:0.6rem;padding-bottom:0.5rem;border-bottom:1px solid #1e293b;}
+  .stat:last-child{border-bottom:none;}
+  .stat-label{font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+  .stat-value{font-size:1.3rem;font-weight:700;}
+  .stat-value.green{color:var(--green);}
+  .stat-value.red{color:var(--red);}
+  .stat-value.accent{color:var(--accent);}
+  .stat-value.small{font-size:1rem;}
+  table{width:100%;border-collapse:collapse;font-size:0.82rem;}
+  th{text-align:left;padding:0.4rem 0.5rem;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);white-space:nowrap;}
+  td{padding:0.35rem 0.5rem;border-bottom:1px solid #1e293b;white-space:nowrap;}
+  .scroll-x{overflow-x:auto;}
+  .verdict-banner{text-align:center;padding:1.25rem;border-radius:12px;margin-bottom:1.5rem;}
+  .verdict-banner.on-track{background:#14532d;border:1px solid var(--green);}
+  .verdict-banner.shortfall{background:#450a0a;border:1px solid var(--red);}
+  .verdict-banner h2{font-size:1.5rem;margin-bottom:0.3rem;}
+  .verdict-banner p{font-size:0.9rem;color:#cbd5e1;}
+  .scenario-row{display:grid;grid-template-columns:140px 1fr 1fr 1fr;padding:0.6rem 0;border-bottom:1px solid #1e293b;align-items:center;font-size:0.85rem;}
+  .scenario-row.header{color:var(--muted);font-weight:500;font-size:0.75rem;text-transform:uppercase;}
+  .scenario-row .s-name{font-weight:600;}
+  .scenario-row .s-amount{text-align:right;font-family:monospace;}
+  .scenario-row .s-status{text-align:center;}
+  .tabs{display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;}
+  .tab{padding:0.5rem 1rem;border-radius:8px;cursor:pointer;background:transparent;border:1px solid var(--border);color:var(--muted);font-size:0.85rem;font-weight:500;transition:all 0.2s;}
+  .tab.active{background:var(--accent);color:#0b0d17;border-color:var(--accent);}
+  .tab-content{display:none;}
+  .tab-content.active{display:block;}
+  .chart-container{max-height:280px;margin:0.5rem 0;}
+  .tip-box{background:#1a1a2e;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:1rem 1.25rem;margin-top:1.25rem;font-size:0.85rem;color:#94a3b8;}
+  footer{text-align:center;padding:2rem 0;color:var(--muted);font-size:0.8rem;border-top:1px solid var(--border);margin-top:2rem;}
+  @media(max-width:768px){.grid-2{grid-template-columns:1fr;}.input-row{grid-template-columns:1fr;}.scenario-row{grid-template-columns:110px 1fr 1fr 1fr;}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <h1>💰 Can I Retire?</h1>
+  <p>A simple check on whether your savings are on track for the retirement you want</p>
+</header>
+
+<div class="card">
+  <h2>📋 Your Details</h2>
+  <small style="color:var(--muted);display:block;margin-bottom:1rem;">All figures in Indian Rupees (₹). Fill in every field.</small>
+  <div class="input-row">
+    <div class="input-group"><label>Current Age</label><input type="number" id="age" value="40" min="18" max="90"></div>
+    <div class="input-group"><label>Retirement Age</label><input type="number" id="retireAge" value="65" min="30" max="90"></div>
+  </div>
+  <div class="input-row">
+    <div class="input-group"><label>Life Expectancy</label><input type="number" id="lifeExp" value="95" min="60" max="110"></div>
+    <div class="input-group"><label>Spouse?</label><select id="hasSpouse"><option value="no">No</option><option value="yes">Yes</option></select></div>
+  </div>
+  <h3>Income & Savings</h3>
+  <div class="input-row">
+    <div class="input-group"><label>Annual Income (₹)</label><input type="number" id="income" value="1200000" step="50000"></div>
+    <div class="input-group"><label>Current Savings (₹)</label><input type="number" id="savings" value="1500000" step="100000"></div>
+  </div>
+  <div class="input-row">
+    <div class="input-group"><label>Monthly Contribution (₹)</label><input type="number" id="monthlyContrib" value="25000" step="1000"></div>
+    <div class="input-group"><label>Employer Match (% of Income)</label><input type="number" id="employerMatch" value="3" min="0" max="100" step="0.5"></div>
+  </div>
+  <h3>Retirement Spending</h3>
+  <div class="input-row">
+    <div class="input-group"><label>Annual Retirement Spending (₹)</label><input type="number" id="spending" value="900000" step="50000"></div>
+    <div class="input-group"><label>Safe Withdrawal Rate (%)</label><input type="number" id="withdrawRate" value="4" min="1" max="10" step="0.25"></div>
+  </div>
+  <h3>Other Retirement Income (₹/year, today's value)</h3>
+  <div class="input-row">
+    <div class="input-group"><label>Govt Pension / NPS / Annuity</label><input type="number" id="govtPension" value="240000" step="10000"></div>
+    <div class="input-group"><label>Pension Starts at Age</label><input type="number" id="pensionStart" value="60" min="40" max="90"></div>
+  </div>
+  <div class="input-row">
+    <div class="input-group"><label>Private Pension</label><input type="number" id="privatePension" value="0" step="10000"></div>
+    <div class="input-group"><label>Rental / Other Income</label><input type="number" id="rentalIncome" value="0" step="10000"></div>
+  </div>
+  <h3>Assumptions</h3>
+  <div class="input-row">
+    <div class="input-group"><label>Pre-Retirement Return (%)</label><input type="number" id="preReturn" value="6" min="0" max="20" step="0.5"></div>
+    <div class="input-group"><label>Post-Retirement Return (%)</label><input type="number" id="postReturn" value="4.5" min="0" max="15" step="0.25"></div>
+  </div>
+  <div class="input-row">
+    <div class="input-group"><label>Inflation Rate (%)</label><input type="number" id="inflation" value="2.5" min="0" max="15" step="0.25"></div>
+    <div class="input-group"><label>Annual Pay Raise (%)</label><input type="number" id="payRaise" value="2.5" min="0" max="15" step="0.25"></div>
+  </div>
+  <div class="btn-group">
+    <button class="btn" onclick="calculate()">🔄 Calculate</button>
+    <button class="btn secondary" onclick="resetDefaults()">↩ Reset Defaults</button>
+  </div>
+</div>
+
+<div id="verdictBanner" class="verdict-banner" style="display:none;"></div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</div>
+  <div class="tab" data-tab="projection" onclick="switchTab('projection')">📈 Projection</div>
+  <div class="tab" data-tab="scenarios" onclick="switchTab('scenarios')">🔀 Scenarios</div>
+</div>
+
+<div id="tab-dashboard" class="tab-content active">
+  <div class="grid-2">
+    <div class="card"><h2>🎯 Key Numbers</h2><div id="dashNumbers"></div></div>
+    <div class="card"><h2>📊 Nest Egg vs. Amount Needed</h2><div class="chart-container"><canvas id="barChart"></canvas></div></div>
+  </div>
+  <div class="card"><h2>📈 Portfolio Balance Over Time</h2><div class="chart-container" style="max-height:320px;"><canvas id="lineChart"></canvas></div></div>
+  <div class="tip-box"><strong>💡 Understand your numbers:</strong> "Projected savings" = what you're on track to have at retirement. "Amount needed" = the lump sum required at your safe withdrawal rate to cover spending not met by other income. A surplus means you're on track.</div>
+</div>
+
+<div id="tab-projection" class="tab-content">
+  <div class="card"><h2>📋 Year-by-Year Projection</h2><div class="scroll-x" id="projectionTable"></div></div>
+</div>
+
+<div id="tab-scenarios" class="tab-content">
+  <div class="card">
+    <h2>🔀 What-If Scenarios</h2>
+    <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;">Compare your plan against six common adjustments. Each row changes one variable.</p>
+    <div id="scenariosContainer"></div>
+  </div>
+</div>
+
+<footer>
+  <p>Can I Retire? — Educational Estimate. Not financial advice.</p>
+  <p style="margin-top:0.3rem;">&copy; 2026 Subhankar Pattanayak</p>
+</footer>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
